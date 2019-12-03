@@ -1,21 +1,12 @@
-import sklearn
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import LabelEncoder
 from sklearn.linear_model import LogisticRegression
-import datetime
 import pandas as pd
 import numpy as np
 import datetime
 import pickle
 import sys
-
-def oneHotEncoding(name):
-    """ Get a one-hot encoding for a given name (in this case, a company name) """
-    encoding = np.zeros(150)
-    for i in range(len(name)):
-        encoding[i] = ord(name[i])
-    return encoding
 
 
 def train_model(clf, X_train, y_train, epochs=10):
@@ -38,15 +29,22 @@ def train_model(clf, X_train, y_train, epochs=10):
     print("Done training.  The score(s) is/are: " + str(scores))
     return scores
 
+
 def _pickle(data, filename):
+    """ Pickles the data into the specified filename. """
     pickle.dump(data, open(filename, 'wb'))
     return
 
+
 def _unpickle(filename):
+    """ Take a pickle out of the jar. """
     return pickle.load(open(filename, 'rb'))
 
+
 def getPrettyTimestamp():
+    """ Returns timestamp: 'YYYY-MM-DD  HH:MM' """
     return datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+
 
 pd.set_option('display.max_columns', 30)
 pd.set_option('display.max_rows', 1000)
@@ -59,9 +57,9 @@ print(dataset['year_founded'].isna().sum())
 
 pd.to_numeric(dataset['year_founded'], errors='coerce')
 
-# dataset = dataset.dropna(subset=["year_founded"])  # Remove NaN values from year_founded column
-
 dataset = dataset.dropna()
+
+print(dataset['size_range'].value_counts())
 
 print(len(dataset))
 print("of which we have this many NaNs:")
@@ -97,10 +95,8 @@ print(xTrain_sf_le.head(15))
 
 print("--------")
 
-
 # Apply one-hot encoding to columns
 ohe.fit(xTrain_sf)
-
 
 featureNames = ohe.get_feature_names()
 print(featureNames)
@@ -114,7 +110,6 @@ print(xTrain.shape)
 # ------ using Logistic Regression classifier - training phase ------
 
 if len(sys.argv) > 1:
-
     # We define the model we're going to use
     lrModel = LogisticRegression(solver='lbfgs', multi_class="multinomial", max_iter=1000, random_state=1)
 
@@ -129,7 +124,6 @@ if len(sys.argv) > 1:
 
 lrModel = _unpickle("models/Model_2019-12-03 12:08")
 
-
 # ---- Doing a few predictions to get a rough idea of accuracy -----
 
 print("= = = = = = = = = = = = = = = = = = = \n\nFirst 10 predictions:\n")
@@ -138,13 +132,26 @@ yPredicted = lrModel.predict(xTrain_sf_encoded[0:10])
 print(yPredicted)
 print(yTrain[0:10])
 
-print (" = = = = = = = = = = = = = ")
+print(" = = = = = = = = = = = = = ")
 
 lrModel.predict_proba(xTrain_sf_encoded[0:10])
 
-
-
 # ----- testing phase -------
 
+testLrScores = train_model(lrModel, xTest_sf_encoded, yTest, 1)
+print(testLrScores)
 
+# trainScore = lrScores[0]
+trainScore = 0.9201578143173162
+testScore = testLrScores[0]
 
+scores = sorted([(trainScore, 'train'), (testScore, 'test')], key=lambda x: x[0], reverse=True)
+better_score = scores[0]  # largest score
+print(scores)
+
+# Imprimer lequel est meilleure
+print("Better score: %s" % "{}".format(better_score))
+
+print("Pickling....")
+
+_pickle(lrModel, "models/TESTING_" + getPrettyTimestamp())
