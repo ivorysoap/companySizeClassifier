@@ -29,6 +29,18 @@ def train_model(clf, X_train, y_train, epochs=10):
     print("Done training.  The score(s) is/are: " + str(scores))
     return scores
 
+def peekPredictions(xTrain_sf_encoded, yTrain):
+
+    print("= = = = = = = = = = = = = = = = = = = \n\nFirst 10 predictions:\n")
+
+    yPredicted = lrModel.predict(xTrain_sf_encoded[0:10])
+    print(yPredicted)
+    print(yTrain[0:10])
+
+    print(" = = = = = = = = = = = = = ")
+
+    lrModel.predict_proba(xTrain_sf_encoded[0:10])
+
 
 def _pickle(data, filename):
     """ Pickles the data into the specified filename. """
@@ -49,7 +61,7 @@ def getPrettyTimestamp():
 pd.set_option('display.max_columns', 30)
 pd.set_option('display.max_rows', 1000)
 
-dataset = pd.read_csv("companies_sorted.csv", nrows=100000)
+dataset = pd.read_csv("companies_sorted.csv", nrows=250000)
 
 print(len(dataset))
 print("of which we have this many NaNs:")
@@ -118,38 +130,32 @@ if len(sys.argv) > 1:
 
     print(lrScores)
 
-    print("Pickling....")
+    print("Training done! Pickling....")
 
-    _pickle(lrModel, "models/Model_" + getPrettyTimestamp())
+    filename = "models/Model_" + getPrettyTimestamp()
 
-lrModel = _unpickle("models/Model_2019-12-03 12:08")
+    _pickle(lrModel, filename)
+
+lrModel = _unpickle(filename)
 
 # ---- Doing a few predictions to get a rough idea of accuracy -----
 
-print("= = = = = = = = = = = = = = = = = = = \n\nFirst 10 predictions:\n")
-
-yPredicted = lrModel.predict(xTrain_sf_encoded[0:10])
-print(yPredicted)
-print(yTrain[0:10])
-
-print(" = = = = = = = = = = = = = ")
-
-lrModel.predict_proba(xTrain_sf_encoded[0:10])
+# peekPredictions(xTrain_sf_encoded, yTrain)
 
 # ----- testing phase -------
 
 testLrScores = train_model(lrModel, xTest_sf_encoded, yTest, 1)
 print(testLrScores)
 
-# trainScore = lrScores[0]
-trainScore = 0.9201578143173162
+trainScore = lrScores[0]
+# trainScore = 0.9201578143173162
 testScore = testLrScores[0]
 
 scores = sorted([(trainScore, 'train'), (testScore, 'test')], key=lambda x: x[0], reverse=True)
 better_score = scores[0]  # largest score
 print(scores)
 
-# Imprimer lequel est meilleure
+# Which score was better?
 print("Better score: %s" % "{}".format(better_score))
 
 print("Pickling....")
