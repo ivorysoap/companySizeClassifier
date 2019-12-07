@@ -50,7 +50,7 @@ def cleanDataset(set):
 
     return set
 
-def peekPredictions(xTrain_sf_encoded, yTrain):
+def peekPredictions(lrModel, xTrain_sf_encoded, yTrain):
 
     print("= = = = = = = = = = = = = = = = = = = \n\nFirst 10 predictions:\n")
 
@@ -105,6 +105,10 @@ def main():
 
     dataset = cleanDataset(dataset)
 
+    print("Heuh")
+
+    print(dataset['size_range'].value_counts())
+
     # size_range is the attribute to be predicted, so we pop it from the dataset.  Execute only once!
     sizeRange = dataset.pop("size_range").values
 
@@ -147,9 +151,7 @@ def main():
     xTrain_sf_encoded = ohe.transform(xTrain_sf)
     xTest_sf_encoded = ohe.transform(xTest_sf)
 
-    print(xTrain.shape)
-
-    # ------ using Logistic Regression classifier - training phase ------
+    # ------ Using Logistic Regression classifier - TRAINING PHASE ------
 
     if userRequestedTrain:
 
@@ -178,15 +180,18 @@ def main():
 
     # ---- Doing a few predictions to get a rough idea of accuracy -----
 
-    # peekPredictions(xTrain_sf_encoded, yTrain)
+    peekPredictions(lrModel, xTrain_sf_encoded, yTrain)
 
     # ----- testing phase -------
 
     testLrScores = train_model(lrModel, xTest_sf_encoded, yTest, 1)
     print(testLrScores)
 
-    # trainScore = lrScores[0]
-    trainScore = 0.9201578143173162
+    if userRequestedTrain:
+        trainScore = lrScores[0]
+    else:
+        trainScore = 0.9201578143173162  # Modal training score - substitute if we didn't train model ourselves
+
     testScore = testLrScores[0]
 
     scores = sorted([(trainScore, 'train'), (testScore, 'test')], key=lambda x: x[0], reverse=True)
