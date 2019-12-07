@@ -34,20 +34,9 @@ def train_model(clf, X_train, y_train, epochs=10):
 
 def cleanDataset(set):
     """ Custom method for cleaning our dataset. """
-    print(len(set))
-    print("of which we have this many NaNs:")
-    print(set['year_founded'].isna().sum())
 
-    pd.to_numeric(set['year_founded'], errors='coerce')
-
-    set = set.dropna()
-
-    print(set['size_range'].value_counts())
-
-    print(len(set))
-    print("of which we have this many NaNs:")
-    print(set['year_founded'].isna().sum())
-
+    pd.to_numeric(set['year_founded'], errors='coerce')  # Force year_founded column to numeric
+    set = set.dropna()  # Drop all NaN rows
     return set
 
 def peekPredictions(lrModel, xTrain_sf_encoded, yTrain):
@@ -103,16 +92,19 @@ def main():
 
     dataset = pd.read_csv("companies_sorted.csv", nrows=10000)
 
+    origLen = len(dataset)
+
     dataset = cleanDataset(dataset)
 
-    print("Heuh")
-
+    print("\n======= Some Dataset Info =======\n")
+    print("Dataset size (original):\t" + str(origLen))
+    print("Dataset size (cleaned):\t" + str(len(dataset)))
+    print("\nValues of size_range:\n")
     print(dataset['size_range'].value_counts())
+    print()
 
-    # size_range is the attribute to be predicted, so we pop it from the dataset.  Execute only once!
+    # size_range is the attribute to be predicted, so we pop it from the dataset
     sizeRange = dataset.pop("size_range").values
-
-    print(dataset[dataset.columns[1:4]].head(5))
 
     # We split our dataset and attribute-to-be-preditcted into training and testing subsets.
     xTrain, xTest, yTrain, yTest = train_test_split(dataset, sizeRange, test_size=0.25, random_state=1)
@@ -127,25 +119,10 @@ def main():
     xTrain_sf = xTrain[featureSet].copy()
     xTest_sf = xTest[featureSet].copy()
 
-    print("The following are the first 5 entries of xTrain_Sf")
-
-    print(xTrain_sf.head(5))
-
-    print("------")
-
-    xTrain_sf_le = xTrain_sf.apply(le.fit_transform)
-
-    print("The following are the first 15 entries of xTrain_sf_le")
-
-    print(xTrain_sf_le.head(15))
-
-    print("--------")
-
     # Apply one-hot encoding to columns
     ohe.fit(xTrain_sf)
 
     featureNames = ohe.get_feature_names()
-    print(featureNames)
 
     # Encoding test and train sets together
     xTrain_sf_encoded = ohe.transform(xTrain_sf)
@@ -161,31 +138,25 @@ def main():
         # Now, let's train it.
         lrScores = train_model(lrModel, xTrain_sf_encoded, yTrain, 1)
 
-        print(lrScores)
-
-        print("Training done! Pickling....")
-
         # Save the model as a file.
         filename = "models/Model_" + getPrettyTimestamp()
+        print("Training done! Pickling model to " + str(filename) + "...")
         pickleFile(lrModel, filename)
 
     # Reload the model for testing.  If we didn't train the model ourselves, then it was specified as an argument.
     lrModel = unpickleFile(filename)
 
-    print(xTrain_sf_encoded[0:10])
-
     PRED = lrModel.predict(xTrain_sf_encoded[0:10])
 
-    print("Unpickled successfully.")
+    print("Unpickled successfully from file " + str(filename))
 
     # ---- Doing a few predictions to get a rough idea of accuracy -----
 
     peekPredictions(lrModel, xTrain_sf_encoded, yTrain)
 
-    # ----- testing phase -------
+    # ------- TESTING PHASE -------
 
     testLrScores = train_model(lrModel, xTest_sf_encoded, yTest, 1)
-    print(testLrScores)
 
     if userRequestedTrain:
         trainScore = lrScores[0]

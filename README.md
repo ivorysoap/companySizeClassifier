@@ -23,7 +23,9 @@ The dataset contains around 7 million companies, with attributes like company na
 
 ## Usage
 
-Coming soon.
+`python modelTrainer.py [--testonly] [filename]`
+
+The ``[--testonly]`` flag specifies to test an existing machine-learning model, instead of creating and training one. If using the `--testonly` flag, you have to specify a `[filename]` from which to load the existing model.
 
 ## Attribution
 
