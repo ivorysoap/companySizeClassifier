@@ -1,5 +1,7 @@
 ## Background
 
+*Under construction.*
+
 `modelTrainer.py` builds a machine-learning model using a logistic regression classifier, if given a dataset with the filename `companies_sorted.csv`.
 
 In our dataset of about 7,000,000 companies, the following table shows the approximate number of companies per each size range:
