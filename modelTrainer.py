@@ -2,6 +2,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import LabelEncoder
 from sklearn.linear_model import LogisticRegression
+from sklearn.neural_network import MLPClassifier
 from tools import pickleFile
 from tools import unpickleFile
 from tools import cleanDataset
@@ -70,7 +71,6 @@ def parseArgs():
 
 
 def main():
-    # TODO Remove print()s throughout
 
     # Parse the arguments.
     userRequestedTrain, filename = parseArgs()
@@ -79,8 +79,11 @@ def main():
     pd.set_option('display.max_columns', 30)
     pd.set_option('display.max_rows', 1000)
 
-    dataset = pd.read_csv("companies_sorted.csv", nrows=11000)
-    #[[year, company, size], ...] [[year,...],[company,...]]
+    # Number of rows to read from CSV
+    NUMROWS = 150000
+
+    dataset = pd.read_csv("companies_sorted.csv", nrows=NUMROWS)
+
     print(type(dataset.head(1)))
 
     print(dataset.shape)
@@ -108,7 +111,7 @@ def main():
 
 
     print(xTrain.transpose())
-    le = LabelEncoder()
+
     ohe = OneHotEncoder(sparse=False, handle_unknown='ignore')
 
     # Our feature set, i.e. the inputs to our machine-learning model.
@@ -133,37 +136,37 @@ def main():
     xTrain_sf_encoded = ohe.transform(xTrain_sf)
     xTest_sf_encoded = ohe.transform(xTest_sf)
 
-    # ------ Using Logistic Regression classifier - TRAINING PHASE ------
+    # ------ Using Multi-Layer Perceptron classifier - TRAINING PHASE ------
 
     if userRequestedTrain:
         # We define the model we're going to use.
-        lrModel = LogisticRegression(solver='lbfgs', multi_class="multinomial", max_iter=1000, random_state=1)
+        mlpModel = MLPClassifier(solver='lbfgs', alpha=1e-4, hidden_layer_sizes=(150, 150), random_state=1, max_iter=100, learning_rate_init=0.01, warm_start=True)
 
         # Now, let's train it.
-        lrScores = train_model(lrModel, xTrain_sf_encoded, yTrain, 1)
+        mlpScores = train_model(mlpModel, xTrain_sf_encoded, yTrain, 1)
 
         # Save the model as a file.
-        filename = "models/Model_" + getPrettyTimestamp()
+        filename = "models/Model_" + getPrettyTimestamp() + "_" + str(NUMROWS)
         print("Training done! Pickling model to " + str(filename) + "...")
-        pickleFile(lrModel, filename)
+        pickleFile(mlpModel, filename)
 
     # Reload the model for testing.  If we didn't train the model ourselves, then it was specified as an argument.
-    lrModel = unpickleFile(filename)
+    mlpModel = unpickleFile(filename)
 
-    # PRED = lrModel.predict(xTrain_sf_encoded[0:10])
+    # PRED = mlpModel.predict(xTrain_sf_encoded[0:10])
 
     print("Unpickled successfully from file " + str(filename))
 
     # ---- Doing a few predictions to get a rough idea of accuracy -----
 
-    peekPredictions(lrModel, xTrain_sf_encoded, yTrain)
+    peekPredictions(mlpModel, xTrain_sf_encoded, yTrain)
 
     # ------- TESTING PHASE -------
 
-    testLrScores = train_model(lrModel, xTest_sf_encoded, yTest, 1)
+    testLrScores = train_model(mlpModel, xTest_sf_encoded, yTest, 1)
 
     if userRequestedTrain:
-        trainScore = lrScores[0]
+        trainScore = mlpScores[0]
     else:
         trainScore = 0.9201578143173162  # Modal training score - substitute if we didn't train model ourselves
 
@@ -178,7 +181,7 @@ def main():
 
     print("Pickling....")
 
-    pickleFile(lrModel, "models/TESTING_" + getPrettyTimestamp())
+    pickleFile(mlpModel, "models/TESTING_" + getPrettyTimestamp())
 
 
 if __name__ == "__main__":
