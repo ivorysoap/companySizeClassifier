@@ -2,10 +2,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import LabelEncoder
 from sklearn.linear_model import LogisticRegression
-from sklearn.linear_model import logistic
 from tools import pickleFile
 from tools import unpickleFile
-import sklearn
+from tools import cleanDataset
+from tools import getPrettyTimestamp
 import pandas as pd
 import numpy as np
 import datetime
@@ -32,15 +32,8 @@ def train_model(clf, X_train, y_train, epochs=10):
     print("Done training.  The score(s) is/are: " + str(scores))
     return scores
 
-def cleanDataset(set):
-    """ Custom method for cleaning our dataset. """
-
-    pd.to_numeric(set['year_founded'], errors='coerce')  # Force year_founded column to numeric
-    set = set.dropna()  # Drop all NaN rows
-    return set
 
 def peekPredictions(lrModel, xTrain_sf_encoded, yTrain):
-
     print("= = = = = = = = = = = = = = = = = = = \n\nFirst 10 predictions:\n")
 
     yPredicted = lrModel.predict(xTrain_sf_encoded[0:10])
@@ -51,9 +44,6 @@ def peekPredictions(lrModel, xTrain_sf_encoded, yTrain):
 
     lrModel.predict_proba(xTrain_sf_encoded[0:10])
 
-def getPrettyTimestamp():
-    """ Returns timestamp: 'YYYY-MM-DD  HH:MM' """
-    return datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
 
 def parseArgs():
     """ Parse program arguments. """
@@ -80,7 +70,6 @@ def parseArgs():
 
 
 def main():
-
     # TODO Remove print()s throughout
 
     # Parse the arguments.
@@ -90,11 +79,19 @@ def main():
     pd.set_option('display.max_columns', 30)
     pd.set_option('display.max_rows', 1000)
 
-    dataset = pd.read_csv("companies_sorted.csv", nrows=10000)
+    dataset = pd.read_csv("companies_sorted.csv", nrows=11000)
+    #[[year, company, size], ...] [[year,...],[company,...]]
+    print(type(dataset.head(1)))
+
+    print(dataset.shape)
 
     origLen = len(dataset)
+    print(origLen)
 
     dataset = cleanDataset(dataset)
+
+    cleanLen = len(dataset)
+    print(cleanLen)
 
     print("\n======= Some Dataset Info =======\n")
     print("Dataset size (original):\t" + str(origLen))
@@ -109,6 +106,8 @@ def main():
     # We split our dataset and attribute-to-be-preditcted into training and testing subsets.
     xTrain, xTest, yTrain, yTest = train_test_split(dataset, sizeRange, test_size=0.25, random_state=1)
 
+
+    print(xTrain.transpose())
     le = LabelEncoder()
     ohe = OneHotEncoder(sparse=False, handle_unknown='ignore')
 
@@ -122,6 +121,12 @@ def main():
     # Apply one-hot encoding to columns
     ohe.fit(xTrain_sf)
 
+    print(" ! !!! - ICI - !!! ! ")
+    print(type(xTrain_sf))
+    print(xTrain_sf.shape)
+    print(xTrain_sf)
+    print(xTest_sf)
+
     featureNames = ohe.get_feature_names()
 
     # Encoding test and train sets together
@@ -131,7 +136,6 @@ def main():
     # ------ Using Logistic Regression classifier - TRAINING PHASE ------
 
     if userRequestedTrain:
-
         # We define the model we're going to use.
         lrModel = LogisticRegression(solver='lbfgs', multi_class="multinomial", max_iter=1000, random_state=1)
 
@@ -146,7 +150,7 @@ def main():
     # Reload the model for testing.  If we didn't train the model ourselves, then it was specified as an argument.
     lrModel = unpickleFile(filename)
 
-    PRED = lrModel.predict(xTrain_sf_encoded[0:10])
+    # PRED = lrModel.predict(xTrain_sf_encoded[0:10])
 
     print("Unpickled successfully from file " + str(filename))
 
